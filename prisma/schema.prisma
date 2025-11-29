@@ -53,8 +53,8 @@ model Court {
 // 3. The Reservation
 model Reservation {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  date        DateTime 
-  status      String   @default("PENDING") //PENDING, CONFIRMED, CANCELED
+  startTime   DateTime
+  status      ReservationStatus
   
   //Client Data (No login required)
   clientName  String
@@ -68,4 +68,12 @@ model Reservation {
   complex     Complex  @relation(fields: [complexId], references: [id])
 
   createdAt   DateTime @default(now())
+}
+
+//Reservation status
+enum ReservationStatus {
+  PENDING   // Newly created (or awaiting payment)
+  CONFIRMED // Payment made or deposit given
+  CANCELED  // User canceled
+  COMPLETED // The game has already been played.
 }

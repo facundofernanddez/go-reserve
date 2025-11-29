@@ -11,13 +11,10 @@ import prisma from '@/lib/prisma';
  */
 export async function GET(request: Request) {
     try {
-        //Get data form the url
         const {searchParams} = new URL (request.url);
         const queryLocation = searchParams.get('location'); //ej. "Corrientes"
 
-        //Empty object to store search conditions
         let conditions = {};
-
         if(queryLocation) {
             conditions = {
                 location: {
@@ -39,14 +36,10 @@ export async function GET(request: Request) {
 
     } catch (error) {
         console.error("Error fetching complexes:", error);
-    
         return NextResponse.json(
             { error: 'Internal Server Error' }, 
             { status: 500 }
         );
-
     }
-    
-
 }
 
