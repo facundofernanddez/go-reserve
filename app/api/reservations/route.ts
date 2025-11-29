@@ -6,8 +6,8 @@ import { ReservationStatus } from '@prisma/client';
 export async function POST(request: Request) {
     try {
         //leo el body y extraigo los datos que necesito
-        const bodyRequest = await request.json();
-        const {complexId, courtId, startTime, clientName, clientPhone} = bodyRequest;
+        const body = await request.json();
+        const {complexId, courtId, startTime, clientName, clientPhone} = body;
         
         const existingReservation = await prisma.reservation.findFirst({
             where: {
@@ -54,4 +54,52 @@ export async function POST(request: Request) {
         );
     }
 
+}
+
+export async function PATCH(request: Request) {
+    try {
+        const body = await request.json();
+        const {reservationId, newStatus} = body;
+
+        if(!reservationId || !newStatus) {
+            return NextResponse.json(
+                {error: "Faltan datos obligatorios."},
+                {status: 400}
+            );
+        }
+
+        //Valida que el estado sea valido
+        if(!Object.values(ReservationStatus).includes(newStatus)) {
+            return NextResponse.json(
+                {error: "Estado no válido. Usa: PENDING, CONFIRMED, CANCELED o COMPLETE"},
+                {status: 400}
+            );
+        }
+
+        //Actualiza la bd
+        const updatedReservation = await prisma.reservation.update({
+            where:
+                {id: reservationId},
+            data: 
+                {status: newStatus}
+        });
+
+        //Notificacion
+        if (newStatus === ReservationStatus.CONFIRMED) {
+            console.log(`PAGO CONFIRMADO para la reserva ${reservationId}`);
+        }
+        if (newStatus === ReservationStatus.CANCELED) {
+            console.log(`RESERVA CANCELADA: ${reservationId}. El horario queda libre.`);
+        }
+
+        return NextResponse.json(updatedReservation, {status: 200});
+
+    } catch (error) {
+        console.error("Error al actualizar la reserva:", error);
+        return NextResponse.json(
+        { error: 'No se pudo actualizar la reserva' },
+        { status: 500 }
+        );
+    }
+    
 }
