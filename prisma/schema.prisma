@@ -5,8 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -18,4 +17,66 @@ model User {
   id    String  @id @default(auto()) @map("_id") @db.ObjectId
   email String  @unique
   name  String?
+}
+
+//The Sports Complex
+model Complex {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  location  String  // Filter by city/zone
+  address   String
+  phone     String
+  email     String  @unique
+  password  String
+
+  //Relations to Court
+  courts        Court[]
+  reservations  Reservation[]
+
+  createdAt     DateTime @default(now())
+}
+
+// 2. The Court
+model Court {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   
+  sport       String   // "Football" or "Padel"
+  price       Float
+  description String?
+  features  String[]  //Characteristics
+  isAvailable Boolean @default(true)
+  
+  //Relation to Complex
+  complexId   String   @db.ObjectId
+  complex     Complex  @relation(fields: [complexId], references: [id])
+  
+  reservas    Reservation[]
+}
+
+// 3. The Reservation
+model Reservation {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  startTime   DateTime
+  status      ReservationStatus
+  
+  //Client Data (No login required)
+  clientName  String
+  clientPhone String
+  
+  //Relations
+  courtId     String   @db.ObjectId
+  court       Court    @relation(fields: [courtId], references: [id])
+  
+  complexId   String   @db.ObjectId
+  complex     Complex  @relation(fields: [complexId], references: [id])
+
+  createdAt   DateTime @default(now())
+}
+
+//Reservation status
+enum ReservationStatus {
+  PENDING   // Newly created (or awaiting payment)
+  CONFIRMED // Payment made or deposit given
+  CANCELED  // User canceled
+  COMPLETED // The game has already been played.
 }
