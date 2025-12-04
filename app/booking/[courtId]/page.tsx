@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import {
   Card,
   CardHeader,
@@ -14,21 +15,67 @@ import { Button } from "@/components/ui/button";
 export default function CourtBookingPage() {
   const params = useParams<{ courtId: string }>();
   const courtId = params.courtId;
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     const form = e.target as HTMLFormElement;
 
-    const datos = {
-      courtId,
-      nombre: form.nombre.value,
-      telefono: form.telefono.value,
-      fecha: form.fecha.value,
-      hora: form.hora.value,
+    const fecha = form.fecha.value; // "2025-12-05"
+    const hora = form.hora.value; // "20:00"
+
+    // Combinamos fecha + hora en un solo Date y lo convertimos a ISO
+    const startTime = new Date(`${fecha}T${hora}:00`);
+
+    // TODO: esto idealmente debería venir desde la cancha seleccionada
+    // (por ejemplo, desde /booking pasando también el complexId).
+    // Por ahora, poné un ID válido de tu base o pedíselo a tu backend.
+    const complexId = "ID_DEL_COMPLEJO_POR_AHORA";
+
+    const payload = {
+      complexId, // lo espera el backend
+      courtId, // viene de la URL
+      startTime: startTime.toISOString(), // backend hace new Date(startTime)
+      clientName: form.nombre.value, // mapeo de nombre → clientName
+      clientPhone: form.telefono.value, // mapeo de telefono → clientPhone
     };
 
-    console.log("Datos de la reserva:", datos);
+    console.log("Voy a enviar este payload a /api/reservations:", payload);
+
+    try {
+      setIsSubmitting(true);
+
+      const respuesta = await fetch("/api/reservations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await respuesta.json().catch(() => ({}));
+
+      if (respuesta.status === 409) {
+        // caso "Turno ocupado"
+        alert(data?.error || "Ese horario ya está reservado ❌");
+        return;
+      }
+
+      if (!respuesta.ok) {
+        console.error("Error HTTP:", respuesta.status, data);
+        alert(data?.error || "Error al crear la reserva ❌");
+        return;
+      }
+
+      // 201 Created
+      console.log("Reserva creada:", data);
+      alert("Reserva creada con éxito ✅");
+      form.reset();
+    } catch (error) {
+      console.error("Error de red al crear la reserva:", error);
+      alert("No se pudo conectar con el servidor ❌");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -67,8 +114,8 @@ export default function CourtBookingPage() {
           </CardContent>
 
           <CardFooter>
-            <Button type="submit" className="w-full">
-              Confirmar reserva
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Enviando..." : "Confirmar reserva"}
             </Button>
           </CardFooter>
         </form>
