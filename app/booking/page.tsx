@@ -64,7 +64,7 @@ export default function BookingPage() {
 
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Más adelante acá podemos mostrar horarios, precio, etc.
+                horarios, precio, y mas cosa
               </p>
             </CardContent>
 
