@@ -1,104 +1,62 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { ReservationStatus } from "@prisma/client";
 
-//Recibo los datos para crear una nueva reserva
-export async function POST(request: Request) {
+// Simulación en memoria para probar. Reemplaza con DB real.
+const reservas: Array<{
+  complexId: string;
+  courtId: string;
+  startTime: string; // ISO
+  clientName: string;
+  clientPhone: string;
+}> = [];
+
+export async function POST(req: Request) {
   try {
-    //leo el body y extraigo los datos que necesito
-    const body = await request.json();
-    const { complexId, courtId, startTime, clientName, clientPhone } = body;
+    const body = await req.json();
+    const { complexId, courtId, startTime, clientName, clientPhone } =
+      body || {};
 
-    const existingReservation = await prisma.reservation.findFirst({
-      where: {
-        courtId: courtId,
-        startTime: new Date(startTime),
-        status: {
-          not: ReservationStatus.CANCELED,
-        },
-      },
-    });
-
-    if (existingReservation) {
-      return NextResponse.json({ error: "Turno ocupado" }, { status: 409 });
-    }
-
-    //Evito datos vacios
+    // Validaciones mínimas
     if (!complexId || !courtId || !startTime || !clientName || !clientPhone) {
       return NextResponse.json(
-        { error: "Faltan datos obligatorios" },
+        { error: "Faltan campos requeridos" },
         { status: 400 }
       );
     }
 
-    //Creo en la BD
-    const newReservation = await prisma.reservation.create({
-      data: {
-        startTime: new Date(startTime),
-        clientName: clientName,
-        clientPhone: clientPhone,
-        status: ReservationStatus.PENDING, //estado inicial
+    // Normalizar fecha/hora
+    const inicio = new Date(startTime);
+    if (isNaN(inicio.getTime())) {
+      return NextResponse.json(
+        { error: "startTime inválido" },
+        { status: 400 }
+      );
+    }
 
-        complex: { connect: { id: complexId } },
-        court: { connect: { id: courtId } },
-      },
-    });
-
-    //respondo con exito
-    return NextResponse.json(newReservation, { status: 201 }); // 201 = Created (Creado)
-  } catch (error) {
-    console.error("Error al crear la reservación:", error);
-    return NextResponse.json(
-      { error: "No se pudo crear la reserva" },
-      { status: 500 }
+    // Regla de conflicto: misma cancha y mismo horario exacto
+    const existeConflicto = reservas.some(
+      (r) => r.courtId === courtId && r.startTime === inicio.toISOString()
     );
-  }
-}
-
-export async function PATCH(request: Request) {
-  try {
-    const body = await request.json();
-    const { reservationId, newStatus } = body;
-
-    if (!reservationId || !newStatus) {
+    if (existeConflicto) {
       return NextResponse.json(
-        { error: "Faltan datos obligatorios." },
-        { status: 400 }
+        { error: "Ese horario ya está reservado" },
+        { status: 409 }
       );
     }
 
-    //Valida que el estado sea valido
-    if (!Object.values(ReservationStatus).includes(newStatus)) {
-      return NextResponse.json(
-        {
-          error:
-            "Estado no válido. Usa: PENDING, CONFIRMED, CANCELED o COMPLETE",
-        },
-        { status: 400 }
-      );
-    }
+    const nueva = {
+      complexId,
+      courtId,
+      startTime: inicio.toISOString(),
+      clientName,
+      clientPhone,
+    };
+    reservas.push(nueva);
 
-    //Actualiza la bd
-    const updatedReservation = await prisma.reservation.update({
-      where: { id: reservationId },
-      data: { status: newStatus },
-    });
-
-    //Notificacion
-    if (newStatus === ReservationStatus.CONFIRMED) {
-      console.log(`PAGO CONFIRMADO para la reserva ${reservationId}`);
-    }
-    if (newStatus === ReservationStatus.CANCELED) {
-      console.log(
-        `RESERVA CANCELADA: ${reservationId}. El horario queda libre.`
-      );
-    }
-
-    return NextResponse.json(updatedReservation, { status: 200 });
-  } catch (error) {
-    console.error("Error al actualizar la reserva:", error);
+    return NextResponse.json(nueva, { status: 201 });
+  } catch (e) {
+    console.error("Error en POST /api/reservations:", e);
     return NextResponse.json(
-      { error: "No se pudo actualizar la reserva" },
+      { error: "Error interno del servidor" },
       { status: 500 }
     );
   }

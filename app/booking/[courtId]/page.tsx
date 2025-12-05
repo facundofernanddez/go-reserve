@@ -25,20 +25,18 @@ export default function CourtBookingPage() {
     const fecha = form.fecha.value; // "2025-12-05"
     const hora = form.hora.value; // "20:00"
 
-    // Combinamos fecha + hora en un solo Date y lo convertimos a ISO
+    // Combinamos fecha y hora 
     const startTime = new Date(`${fecha}T${hora}:00`);
 
-    // TODO: esto idealmente debería venir desde la cancha seleccionada
-    // (por ejemplo, desde /booking pasando también el complexId).
-    // Por ahora, poné un ID válido de tu base o pedíselo a tu backend.
+
     const complexId = "ID_DEL_COMPLEJO_POR_AHORA";
 
     const payload = {
-      complexId, // lo espera el backend
-      courtId, // viene de la URL
-      startTime: startTime.toISOString(), // backend hace new Date(startTime)
-      clientName: form.nombre.value, // mapeo de nombre → clientName
-      clientPhone: form.telefono.value, // mapeo de telefono → clientPhone
+      complexId, 
+      courtId, 
+      startTime: startTime.toISOString(), 
+      clientName: form.nombre.value, 
+      clientPhone: form.telefono.value, 
     };
 
     console.log("Voy a enviar este payload a /api/reservations:", payload);
