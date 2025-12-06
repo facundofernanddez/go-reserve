@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,20 +24,19 @@ import { Input } from "@/components/ui/input";
 type Court = {
   id: string;
   name: string;
-  sport?: string;
+  sport: string;
+  price?: number;
+  description?: string;
+  features?: string[];
+  isAvailable?: boolean;
   complexId: string;
   location?: string;
-  pricePerHour?: number;
-  imageUrl?: string;
 };
 
-const MOCK_COURTS: Court[] = [
-  { id: "1", name: "Cancha 1", sport: "Fútbol", complexId: "demo-complex", location: "Sede Centro", pricePerHour: 6000 },
-  { id: "2", name: "Cancha 2", sport: "Fútbol", complexId: "demo-complex", location: "Sede Norte",  pricePerHour: 6500 },
-  { id: "3", name: "Cancha Tech", sport: "Paddle", complexId: "demo-complex", location: "Sede Sur", pricePerHour: 7000 },
-];
-
 export default function BookingPage() {
+  const sp = useSearchParams();
+  const complexIdFromQuery = sp.get("complexId") || ""; // si llega desde otra página
+  const [complexId, setComplexId] = useState<string>(complexIdFromQuery);
   const [courts, setCourts] = useState<Court[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,34 +46,29 @@ export default function BookingPage() {
   );
 
   useEffect(() => {
+    if (!complexId) {
+      setError("Seleccioná un complejo (complexId es requerido)");
+      setCourts([]);
+      setLoading(false);
+      return;
+    }
     let alive = true;
     (async () => {
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch("/api/courts", { cache: "no-store" });
+        const url = `/api/courts?complexId=${encodeURIComponent(complexId)}${
+          sport !== "all" ? `&sport=${encodeURIComponent(sport)}` : ""
+        }`;
+        const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-
         if (!alive) return;
-        if (Array.isArray(data) && data.length > 0) {
-          setCourts(data);
-        } else {
-          // fallback en desarrollo para no dejar la UI vacía
-          if (process.env.NODE_ENV === "development") {
-            setCourts(MOCK_COURTS);
-          } else {
-            setCourts([]);
-          }
-        }
+        setCourts(Array.isArray(data) ? data : []);
       } catch (e: any) {
         if (!alive) return;
         setError("No se pudo cargar /api/courts");
-        if (process.env.NODE_ENV === "development") {
-          setCourts(MOCK_COURTS);
-        } else {
-          setCourts([]);
-        }
+        setCourts([]);
       } finally {
         if (alive) setLoading(false);
       }
@@ -81,7 +76,7 @@ export default function BookingPage() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [complexId, sport]);
 
   const sports = useMemo(() => {
     const set = new Set<string>();
@@ -90,16 +85,12 @@ export default function BookingPage() {
   }, [courts]);
 
   const filtered = useMemo(() => {
-    const base =
-      sport === "all" ? courts : courts.filter((c) => c.sport === sport);
-    // Aquí podrías filtrar por disponibilidad según "date" si el backend lo soporta.
-    return base;
-  }, [courts, sport, date]);
+    return sport === "all" ? courts : courts.filter((c) => c.sport === sport);
+  }, [courts, sport]);
 
   return (
     <main className="min-h-screen p-6">
       <div className="mx-auto w-full max-w-5xl">
-        {/* Barra superior estilo equipo */}
         <div className="mb-4 h-2 w-full grid grid-cols-4 rounded-lg overflow-hidden">
           <div className="bg-[var(--brand-green)]" />
           <div className="bg-[var(--brand-yellow)]" />
@@ -122,8 +113,13 @@ export default function BookingPage() {
             </div>
           </div>
 
-          {/* Filtros */}
           <div className="flex items-center gap-3">
+            <Input
+              placeholder="complexId"
+              value={complexId}
+              onChange={(e) => setComplexId(e.target.value)}
+              className="w-[200px]"
+            />
             <Select value={sport} onValueChange={setSport}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Deporte" />
@@ -136,7 +132,6 @@ export default function BookingPage() {
                 ))}
               </SelectContent>
             </Select>
-
             <Input
               type="date"
               value={date}
@@ -146,7 +141,12 @@ export default function BookingPage() {
           </div>
         </header>
 
-        {/* Grid de canchas */}
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
         {loading ? (
           <p className="text-sm text-[var(--brand-brown)]/70">
             Cargando canchas…
@@ -164,7 +164,6 @@ export default function BookingPage() {
                 key={c.id}
                 className="overflow-hidden border-[var(--brand-brown)]/10 bg-white/90 backdrop-blur shadow-soft"
               >
-                {/* Header con imagen o césped */}
                 <div
                   className="h-28 w-full bg-[length:24px_24px] bg-[radial-gradient(circle_at_12px_12px,rgba(255,255,255,0.06)_1px,transparent_1px)]"
                   style={{ backgroundColor: "#1f533e" }}
@@ -174,7 +173,7 @@ export default function BookingPage() {
                     {c.name || `Cancha ${c.id}`}
                   </CardTitle>
                   <CardDescription className="text-[var(--brand-brown)]/70">
-                    {c.sport || "Fútbol"} • {c.location || "Complejo deportivo"}
+                    {c.sport || "Football"} • {c.location || "Complejo"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
@@ -183,9 +182,7 @@ export default function BookingPage() {
                       {new Date(date).toLocaleDateString()}
                     </span>
                     <span className="font-medium text-[var(--brand-brown)]">
-                      {c.pricePerHour
-                        ? `$${c.pricePerHour}/h`
-                        : "Consulta valor"}
+                      {c.price ? `$${c.price}/h` : "Consulta valor"}
                     </span>
                   </div>
                   <div className="mt-3 h-1 w-full rounded-full bg-[linear-gradient(to_right,var(--brand-green),var(--brand-yellow),var(--brand-orange))]" />

@@ -5,6 +5,13 @@ import { useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 export default function CourtBookingPage() {
   const params = useParams<{ courtId: string }>();
@@ -22,8 +29,25 @@ export default function CourtBookingPage() {
   const [reservas, setReservas] = useState<
     { courtId: string; startTime: string; clientName: string }[]
   >([]);
+  const [fechaSel, setFechaSel] = useState(initialDate);
+  const [horaSel, setHoraSel] = useState<string>("");
 
   const minDate = useMemo(() => new Date().toISOString().split("T")[0], []);
+
+  // Normaliza fecha al cambiar y limpia hora si queda inválida
+  function onFechaChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value;
+    const clamped = val < minDate ? minDate : val;
+    setFechaSel(clamped);
+
+    // si la hora seleccionada se vuelve pasada para "hoy", limpiarla
+    if (horaSel) {
+      const candidate = new Date(`${clamped}T${horaSel}:00`);
+      if (candidate < new Date()) {
+        setHoraSel("");
+      }
+    }
+  }
 
   async function loadReservas() {
     try {
@@ -41,6 +65,33 @@ export default function CourtBookingPage() {
     loadReservas();
   }, [courtId]);
 
+  // genera slots (por ejemplo 08:00 a 23:00 cada 60 min)
+  const slots = useMemo(() => {
+    const out: string[] = [];
+    for (let h = 8; h <= 23; h++) {
+      const hh = String(h).padStart(2, "0");
+      out.push(`${hh}:00`);
+    }
+    return out;
+  }, []);
+
+  // horas ocupadas del día seleccionado para esta cancha
+  const horasOcupadas = useMemo(() => {
+    const sameDay = reservas.filter((r) => {
+      const d = new Date(r.startTime);
+      const isoDay = new Date(fechaSel + "T00:00:00").toDateString();
+      return r.courtId === courtId && d.toDateString() === isoDay;
+    });
+    const set = new Set<string>();
+    sameDay.forEach((r) => {
+      const d = new Date(r.startTime);
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      set.add(`${hh}:${mm}`);
+    });
+    return set;
+  }, [reservas, fechaSel, courtId]);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setMsg(null);
@@ -56,8 +107,8 @@ export default function CourtBookingPage() {
     const fd = new FormData(form);
     const nombre = String(fd.get("nombre") || "").trim();
     const telefono = String(fd.get("telefono") || "").trim();
-    const fecha = String(fd.get("fecha") || "");
-    const hora = String(fd.get("hora") || "");
+    const fecha = fechaSel;
+    const hora = horaSel || String(fd.get("hora") || "");
 
     if (!nombre || !telefono || !fecha || !hora) {
       setMsg({ type: "error", text: "Completá todos los campos" });
@@ -129,14 +180,14 @@ export default function CourtBookingPage() {
 
         <header className="px-6 pt-6 pb-2 flex items-center gap-3">
           {/* Icono balón simple (emoji o SVG) */}
-          <div className="h-10 w-10 flex items-center justify-center rounded-full bg-brand-green/20 text-2xl">
+          <div className="h-10 w-10 flex items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--brand-green)_25%,transparent)] text-2xl">
             ⚽
           </div>
           <div>
-            <h2 className="text-2xl font-semibold text-brand-brown">
+            <h2 className="text-2xl font-semibold text-[var(--brand-brown)]">
               Reserva de cancha {courtId}
             </h2>
-            <p className="text-xs tracking-wide text-brand-brown/60 uppercase">
+            <p className="text-xs tracking-wide text-[color:color-mix(in_srgb,var(--brand-brown)_65%,transparent)] uppercase">
               Futbol • Turnos por hora
             </p>
           </div>
@@ -164,8 +215,8 @@ export default function CourtBookingPage() {
           )}
 
           {/* Bloque informativo con líneas de cancha */}
-          <div className="mb-4 rounded-lg border border-brand-brown/10 bg-brand-green/10 p-3">
-            <p className="text-sm text-brand-brown/80">
+          <div className="mb-4 rounded-lg border border-[color:color-mix(in_srgb,var(--brand-brown)_10%,transparent)] bg-[color:color-mix(in_srgb,var(--brand-green)_15%,transparent)] p-3">
+            <p className="text-sm text-[color:color-mix(in_srgb,var(--brand-brown)_80%,transparent)]">
               Completá los datos para confirmar tu turno. Elegí fecha y horario
               disponible.
             </p>
@@ -192,9 +243,27 @@ export default function CourtBookingPage() {
                 type="date"
                 required
                 min={minDate}
-                defaultValue={initialDate}
+                value={fechaSel}
+                onChange={onFechaChange}
               />
-              <Input name="hora" type="time" required />
+              {/* Selector de hora con bloqueo */}
+              <Select value={horaSel} onValueChange={setHoraSel}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Elegí hora" />
+                </SelectTrigger>
+                <SelectContent>
+                  {slots.map((h) => {
+                    const disabled =
+                      horasOcupadas.has(h) ||
+                      new Date(`${fechaSel}T${h}:00`) < new Date();
+                    return (
+                      <SelectItem key={h} value={h} disabled={disabled}>
+                        {h} {horasOcupadas.has(h) ? "— ocupado" : ""}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
             <Button
               type="submit"
@@ -219,9 +288,9 @@ export default function CourtBookingPage() {
                 reservas.map((r, i) => (
                   <li
                     key={i}
-                    className="text-sm text-brand-brown flex items-center gap-2"
+                    className="text-sm text-[var(--brand-brown)] flex items-center gap-2"
                   >
-                    <span className="inline-block h-2 w-2 rounded-full bg-brand-green" />
+                    <span className="inline-block h-2 w-2 rounded-full bg-[var(--brand-green)]" />
                     {new Date(r.startTime).toLocaleString()} — {r.clientName}
                   </li>
                 ))
