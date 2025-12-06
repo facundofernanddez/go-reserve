@@ -76,6 +76,10 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --brand-green: #adc270;
+  --brand-yellow: #fecb68;
+  --brand-orange: #fda768;
+  --brand-brown: #473c33;
 }
 
 .dark {
@@ -118,5 +122,49 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Césped oscuro + viñetas + franjas tipo corte */
+    background-color: #0f3a2a;
+    background-image: radial-gradient(
+        1000px 400px at 50% 110%,
+        rgba(0, 0, 0, 0.6),
+        transparent 60%
+      ),
+      radial-gradient(
+        1200px 600px at -10% -10%,
+        rgba(0, 0, 0, 0.35),
+        transparent 60%
+      ),
+      radial-gradient(
+        1200px 600px at 110% -10%,
+        rgba(0, 0, 0, 0.35),
+        transparent 60%
+      ),
+      repeating-linear-gradient(
+        0deg,
+        rgba(255, 255, 255, 0.05) 0 48px,
+        rgba(255, 255, 255, 0.02) 48px 96px
+      );
+    background-attachment: fixed, fixed, fixed, fixed;
+  }
+  /* Líneas sutiles: mitad de cancha + círculo central */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+      /* mitad de cancha (horizontal) */ linear-gradient(
+          to right,
+          rgba(255, 255, 255, 0.18),
+          rgba(255, 255, 255, 0.18)
+        )
+        0 50% / 100% 2px no-repeat,
+      /* círculo central */
+        radial-gradient(
+          130px 130px at 50% 50%,
+          rgba(255, 255, 255, 0.22) 1px,
+          transparent 2px
+        );
+    opacity: 0.18;
+    pointer-events: none;
   }
 }
