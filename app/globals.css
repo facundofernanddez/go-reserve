@@ -122,49 +122,49 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Césped oscuro + viñetas + franjas tipo corte */
-    background-color: #0f3a2a;
+    /* Fondo claro */
+    background-color: #f4f7f6;
+    color: #111;
+    /* bandas sutiles y textura muy tenue */
     background-image: radial-gradient(
-        1000px 400px at 50% 110%,
-        rgba(0, 0, 0, 0.6),
+        900px 360px at 50% 110%,
+        rgba(0, 0, 0, 0.06),
         transparent 60%
       ),
       radial-gradient(
-        1200px 600px at -10% -10%,
-        rgba(0, 0, 0, 0.35),
+        1100px 520px at -10% -10%,
+        rgba(0, 0, 0, 0.05),
         transparent 60%
       ),
       radial-gradient(
-        1200px 600px at 110% -10%,
-        rgba(0, 0, 0, 0.35),
+        1100px 520px at 110% -10%,
+        rgba(0, 0, 0, 0.05),
         transparent 60%
       ),
       repeating-linear-gradient(
         0deg,
-        rgba(255, 255, 255, 0.05) 0 48px,
-        rgba(255, 255, 255, 0.02) 48px 96px
+        rgba(0, 0, 0, 0.03) 0 44px,
+        rgba(0, 0, 0, 0.015) 44px 88px
       );
     background-attachment: fixed, fixed, fixed, fixed;
   }
-  /* Líneas sutiles: mitad de cancha + círculo central */
   body::after {
     content: "";
     position: fixed;
     inset: 0;
-    background:
-      /* mitad de cancha (horizontal) */ linear-gradient(
+    /* línea central muy clara + puntos sutiles */
+    background: linear-gradient(
           to right,
-          rgba(255, 255, 255, 0.18),
-          rgba(255, 255, 255, 0.18)
+          rgba(0, 0, 0, 0.06),
+          rgba(0, 0, 0, 0.06)
         )
         0 50% / 100% 2px no-repeat,
-      /* círculo central */
-        radial-gradient(
-          130px 130px at 50% 50%,
-          rgba(255, 255, 255, 0.22) 1px,
-          transparent 2px
-        );
-    opacity: 0.18;
+      radial-gradient(
+        130px 130px at 50% 50%,
+        rgba(0, 0, 0, 0.09) 1px,
+        transparent 2px
+      );
+    opacity: 0.12;
     pointer-events: none;
   }
 }
