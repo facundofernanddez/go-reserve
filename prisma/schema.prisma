@@ -14,69 +14,124 @@ datasource db {
 }
 
 model User {
-  id    String  @id @default(auto()) @map("_id") @db.ObjectId
-  email String  @unique
-  name  String?
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  email         String    @unique
+  name          String?
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  @@map("user")
 }
 
 //The Sports Complex
+
 model Complex {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  location  String  // Filter by city/zone
-  address   String
-  phone     String
-  email     String  @unique
-  password  String
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  name     String
+  location String // Filter by city/zone
+  address  String
+  phone    String
+  email    String @unique
+  password String
 
   //Relations to Court
-  courts        Court[]
-  reservations  Reservation[]
+  courts       Court[]
+  reservations Reservation[]
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 // 2. The Court
+
 model Court {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String   
-  sport       String   // "Football" or "Padel"
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  sport       String // "Football" or "Padel"
   price       Float
   description String?
-  features  String[]  //Characteristics
-  isAvailable Boolean @default(true)
-  
+  features    String[] //Characteristics
+  isAvailable Boolean       @default(true)
   //Relation to Complex
-  complexId   String   @db.ObjectId
-  complex     Complex  @relation(fields: [complexId], references: [id])
-  
+  complexId   String        @db.ObjectId
+  complex     Complex       @relation(fields: [complexId], references: [id])
   reservas    Reservation[]
 }
 
 // 3. The Reservation
+
 model Reservation {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
   startTime   DateTime
   status      ReservationStatus
-  
   //Client Data (No login required)
   clientName  String
   clientPhone String
-  
   //Relations
-  courtId     String   @db.ObjectId
-  court       Court    @relation(fields: [courtId], references: [id])
-  
-  complexId   String   @db.ObjectId
-  complex     Complex  @relation(fields: [complexId], references: [id])
+  courtId     String            @db.ObjectId
+  court       Court             @relation(fields: [courtId], references: [id])
+  complexId   String            @db.ObjectId
+  complex     Complex           @relation(fields: [complexId], references: [id])
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 //Reservation status
+
 enum ReservationStatus {
-  PENDING   // Newly created (or awaiting payment)
+  PENDING // Newly created (or awaiting payment)
   CONFIRMED // Payment made or deposit given
-  CANCELED  // User canceled
+  CANCELED // User canceled
   COMPLETED // The game has already been played.
+}
+
+model Session {
+  id        String   @id @map("_id")
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @map("_id")
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @map("_id")
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
 }
