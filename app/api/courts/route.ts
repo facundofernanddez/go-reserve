@@ -2,21 +2,16 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 /**
- * GET /api/courts
- * Lista canchas de un complejo. Filtro opcional por deporte.
- * Query:
- *  - complexId (string, requerido)
- *  - sport (string, opcional: igualdad o contains insensible si lo prefieres)
+ *
+ * @param request
+ * @returns
  */
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const complexId = searchParams.get("complexId");
-    const sport = searchParams.get("sport");
+    const sport = searchParams.get("sport"); //filtrar por deporte
 
     if (!complexId) {
       return NextResponse.json(
@@ -25,20 +20,29 @@ export async function GET(request: Request) {
       );
     }
 
-    const where: Prisma.CourtWhereInput = { complexId };
-    if (sport && sport !== "all") {
-      // Igualdad simple. Si quieres insensible:
-      // where.sport = { contains: sport, mode: "insensitive" };
-      where.sport = sport;
+    // Preparamos el filtro
+    const conditions: Prisma.CourtWhereInput = {
+      complexId: complexId,
+    };
+
+    // Si también pidieron filtrar por deporte (ej: solo futbol)
+    if (sport) {
+      conditions.sport = {
+        equals: sport,
+        mode: "insensitive",
+      };
     }
 
     const courts = await prisma.court.findMany({
-      where,
-      orderBy: { name: "asc" },
+      where: conditions,
+      orderBy: {
+        name: "asc",
+      },
     });
+
     return NextResponse.json(courts, { status: 200 });
-  } catch (error: any) {
-    console.error("Error fetching courts:", error?.message, error);
+  } catch (error) {
+    console.error("Error fetching courts:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
@@ -46,19 +50,12 @@ export async function GET(request: Request) {
   }
 }
 
-/**
- * POST /api/courts
- * Crea una cancha dentro de un complejo.
- * Body:
- *  - name (string), sport (string), price (number), complexId (string) — requeridos
- *  - description (string), features (string[]) — opcionales
- */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { name, sport, price, complexId, description, features } = body;
 
-    if (!name || !sport || price == null || !complexId) {
+    if (!name || !sport || !price || !complexId) {
       return NextResponse.json(
         { error: "Faltan datos obligatorios" },
         { status: 400 }
@@ -67,21 +64,21 @@ export async function POST(request: Request) {
 
     const newCourt = await prisma.court.create({
       data: {
-        name,
-        sport,
+        name: name,
+        sport: sport,
         price: Number(price),
         description: description || "",
         features: features || [],
         isAvailable: true,
-        complexId,
-        // Si tu modelo no tiene campo complexId, usa la relación:
-        // complex: { connect: { id: complexId } },
+        complex: {
+          connect: { id: complexId },
+        },
       },
     });
 
     return NextResponse.json(newCourt, { status: 201 });
-  } catch (error: any) {
-    console.error("Error al crear cancha:", error?.message, error);
+  } catch (error) {
+    console.error("Error al crear cancha:", error);
     return NextResponse.json(
       { error: "Error al crear la cancha" },
       { status: 500 }
@@ -89,13 +86,6 @@ export async function POST(request: Request) {
   }
 }
 
-/**
- * PATCH /api/courts
- * Actualiza una cancha existente por id.
- * Body:
- *  - courtId (string, requerido)
- *  - name, price, isAvailable, description, features — opcionales
- */
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
@@ -103,23 +93,23 @@ export async function PATCH(request: Request) {
 
     if (!courtId) {
       return NextResponse.json(
-        { error: "Se requiere courtId" },
+        { error: "Se requiere courtId" }, //no estoy segura de este mensaje!!!
         { status: 400 }
       );
     }
 
-    const data: Prisma.CourtUpdateInput = {
-      ...(name != null ? { name } : {}),
-      ...(price != null ? { price: Number(price) } : {}),
-      ...(isAvailable != null ? { isAvailable } : {}),
-      ...(description != null ? { description } : {}),
-      ...(features != null ? { features } : {}),
-    };
-
+    //actualiza en bd
     const updatedCourt = await prisma.court.update({
       where: { id: courtId },
-      data,
+      data: {
+        name: name,
+        price: price ? Number(price) : undefined,
+        isAvailable: isAvailable,
+        description: description,
+        features: features,
+      },
     });
+
     return NextResponse.json(updatedCourt, { status: 200 });
   } catch (error) {
     console.error("No se pudo actualizar la cancha:", error);
