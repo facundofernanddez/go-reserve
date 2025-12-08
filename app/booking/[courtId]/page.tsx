@@ -195,7 +195,10 @@ export default function CourtBookingPage() {
 
         <section className="px-6 py-4">
           {!complexId && (
-            <Alert className="mb-3" variant="destructive">
+            <Alert
+              className="mb-3"
+              variant="destructive"
+            >
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>
                 Falta el Complex ID. Abrí la reserva desde la lista de canchas.
@@ -223,7 +226,12 @@ export default function CourtBookingPage() {
             <div className="mt-3 h-1 w-full rounded-full bg-[linear-gradient(to_right,var(--brand-green),var(--brand-yellow),var(--brand-orange))]" />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-3">
+          {/**Llamar al componente ReservationForm y pasarle los Props */}
+          {/** */}
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-3"
+          >
             <Input
               name="nombre"
               placeholder="Nombre y apellido"
@@ -247,7 +255,10 @@ export default function CourtBookingPage() {
                 onChange={onFechaChange}
               />
               {/* Selector de hora con bloqueo */}
-              <Select value={horaSel} onValueChange={setHoraSel}>
+              <Select
+                value={horaSel}
+                onValueChange={setHoraSel}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Elegí hora" />
                 </SelectTrigger>
@@ -257,7 +268,11 @@ export default function CourtBookingPage() {
                       horasOcupadas.has(h) ||
                       new Date(`${fechaSel}T${h}:00`) < new Date();
                     return (
-                      <SelectItem key={h} value={h} disabled={disabled}>
+                      <SelectItem
+                        key={h}
+                        value={h}
+                        disabled={disabled}
+                      >
                         {h} {horasOcupadas.has(h) ? "— ocupado" : ""}
                       </SelectItem>
                     );
@@ -273,6 +288,7 @@ export default function CourtBookingPage() {
               {isSubmitting ? "Reservando..." : "Confirmar reserva"}
             </Button>
           </form>
+          {/** */}
 
           {/* Reservas existentes con íconos */}
           <section className="mt-6">

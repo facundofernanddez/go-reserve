@@ -63,7 +63,12 @@ export default function ReservationForm() {
   const { mutate, isPending } = useMutation({
     mutationFn: createReservation,
     onSuccess: async () => {
+      form.reset();
       queryClient.invalidateQueries({ queryKey: ["reservations"] });
+      alert("Reserva creada con éxito");
+    },
+    onError: (e: Error) => {
+      alert(e.message);
     },
   });
 
