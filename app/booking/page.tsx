@@ -1,8 +1,8 @@
 "use client";
-import React, { useMemo, useState } from "react";
+
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,59 +21,72 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 
-type Complex = { id: string; name: string; location?: string };
 type Court = {
   id: string;
   name: string;
   sport: string;
   price?: number;
+  description?: string;
+  features?: string[];
+  isAvailable?: boolean;
   complexId: string;
   location?: string;
 };
 
 export default function BookingPage() {
   const sp = useSearchParams();
-  const complexIdFromQuery = sp.get("complexId") || "";
+  const complexIdFromQuery = sp.get("complexId") || ""; // si llega desde otra página
   const [complexId, setComplexId] = useState<string>(complexIdFromQuery);
+  const [courts, setCourts] = useState<Court[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sport, setSport] = useState<string>("all");
   const [date, setDate] = useState<string>(
     () => new Date().toISOString().split("T")[0]
   );
 
-  const complexesQ = useQuery({
-    queryKey: ["complexes"],
-    queryFn: async () => {
-      const res = await fetch("/api/complexes", { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json() as Promise<Complex[]>;
-    },
-    staleTime: 60_000,
-  });
+  useEffect(() => {
+    if (!complexId) {
+      setError("Seleccioná un complejo (complexId es requerido)");
+      setCourts([]);
+      setLoading(false);
+      return;
+    }
+    let alive = true;
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const url = `/api/courts?complexId=${encodeURIComponent(complexId)}${
+          sport !== "all" ? `&sport=${encodeURIComponent(sport)}` : ""
+        }`;
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!alive) return;
+        setCourts(Array.isArray(data) ? data : []);
+      } catch (e: any) {
+        if (!alive) return;
+        setError("No se pudo cargar /api/courts");
+        setCourts([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [complexId, sport]);
 
-  const courtsQ = useQuery({
-    queryKey: ["courts", complexId, sport],
-    enabled: !!complexId,
-    queryFn: async () => {
-      const url = `/api/courts?complexId=${encodeURIComponent(complexId)}${
-        sport !== "all" ? `&sport=${encodeURIComponent(sport)}` : ""
-      }`;
-      const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json() as Promise<Court[]>;
-    },
-  });
-
-  const complexes = Array.isArray(complexesQ.data) ? complexesQ.data : [];
-  const courts = Array.isArray(courtsQ.data) ? courtsQ.data : [];
   const sports = useMemo(() => {
     const set = new Set<string>();
     courts.forEach((c) => c.sport && set.add(c.sport));
     return ["all", ...Array.from(set)];
   }, [courts]);
-  const filtered = useMemo(
-    () => (sport === "all" ? courts : courts.filter((c) => c.sport === sport)),
-    [courts, sport]
-  );
+
+  const filtered = useMemo(() => {
+    return sport === "all" ? courts : courts.filter((c) => c.sport === sport);
+  }, [courts, sport]);
 
   return (
     <main className="min-h-screen p-6">
@@ -95,29 +108,18 @@ export default function BookingPage() {
                 Reservá tu cancha
               </h1>
               <p className="text-xs tracking-wide text-[color:color-mix(in_srgb,var(--brand-brown)_65%,transparent)] uppercase">
-                Filtros por complejo, deporte y fecha
+                Filtros por deporte y fecha
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <Select value={complexId || ""} onValueChange={setComplexId}>
-              <SelectTrigger className="w-[220px]">
-                <SelectValue
-                  placeholder={
-                    complexesQ.isLoading ? "Cargando..." : "Elegí complejo"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {complexes.map((cx) => (
-                  <SelectItem key={cx.id} value={cx.id}>
-                    {cx.name} {cx.location ? `— ${cx.location}` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
+            <Input
+              placeholder="complexId"
+              value={complexId}
+              onChange={(e) => setComplexId(e.target.value)}
+              className="w-[200px]"
+            />
             <Select value={sport} onValueChange={setSport}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Deporte" />
@@ -130,7 +132,6 @@ export default function BookingPage() {
                 ))}
               </SelectContent>
             </Select>
-
             <Input
               type="date"
               value={date}
@@ -140,18 +141,16 @@ export default function BookingPage() {
           </div>
         </header>
 
-        {!complexId ? (
-          <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
-            Seleccioná un complejo para ver canchas.
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {error}
           </div>
-        ) : courtsQ.isLoading ? (
+        )}
+
+        {loading ? (
           <p className="text-sm text-[var(--brand-brown)]/70">
             Cargando canchas…
           </p>
-        ) : courtsQ.isError ? (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            No se pudo cargar /api/courts
-          </div>
         ) : filtered.length === 0 ? (
           <div className="rounded-xl border border-[var(--brand-brown)]/10 bg-white/70 backdrop-blur p-6 text-center">
             <p className="text-[var(--brand-brown)]">
