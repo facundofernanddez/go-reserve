@@ -1,7 +1,19 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @custom-variant dark (&:is(.dark *));
+
+/* Paleta base */
+:root {
+  --brand-green: #adc270;
+  --brand-yellow: #fecb68;
+  --brand-orange: #fda768;
+  --brand-brown: #473c33;
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -76,10 +88,6 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  --brand-green: #adc270;
-  --brand-yellow: #fecb68;
-  --brand-orange: #fda768;
-  --brand-brown: #473c33;
 }
 
 .dark {
@@ -116,6 +124,7 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Fondo claro y neutral */
 @layer base {
   * {
     @apply border-border outline-ring/50;

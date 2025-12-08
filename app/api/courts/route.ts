@@ -5,6 +5,13 @@ import { Prisma } from "@prisma/client";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * GET /api/courts
+ * Lista canchas de un complejo. Filtro opcional por deporte.
+ * Query:
+ *  - complexId (string, requerido)
+ *  - sport (string, opcional: igualdad o contains insensible si lo prefieres)
+ */
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -20,9 +27,9 @@ export async function GET(request: Request) {
 
     const where: Prisma.CourtWhereInput = { complexId };
     if (sport && sport !== "all") {
-      // igualdad simple; si quieres insensible, usa contains/mode
-      where.sport = sport;
+      // Igualdad simple. Si quieres insensible:
       // where.sport = { contains: sport, mode: "insensitive" };
+      where.sport = sport;
     }
 
     const courts = await prisma.court.findMany({
@@ -39,6 +46,13 @@ export async function GET(request: Request) {
   }
 }
 
+/**
+ * POST /api/courts
+ * Crea una cancha dentro de un complejo.
+ * Body:
+ *  - name (string), sport (string), price (number), complexId (string) — requeridos
+ *  - description (string), features (string[]) — opcionales
+ */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -60,7 +74,7 @@ export async function POST(request: Request) {
         features: features || [],
         isAvailable: true,
         complexId,
-        // si tu modelo no tiene complexId como campo:
+        // Si tu modelo no tiene campo complexId, usa la relación:
         // complex: { connect: { id: complexId } },
       },
     });
@@ -75,6 +89,13 @@ export async function POST(request: Request) {
   }
 }
 
+/**
+ * PATCH /api/courts
+ * Actualiza una cancha existente por id.
+ * Body:
+ *  - courtId (string, requerido)
+ *  - name, price, isAvailable, description, features — opcionales
+ */
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
