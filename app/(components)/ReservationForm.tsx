@@ -1,7 +1,19 @@
 "use client";
 
+import { useMemo } from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+
 import { Button } from "@/components/ui/button";
-import { FormControl, FormField, FormItem } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -10,11 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
-import { Form, useForm } from "react-hook-form";
-import { z } from "zod";
 
 const formSchema = z.object({
   nombre: z.string().min(1, "El nombre es obligatorio"),
@@ -23,60 +30,50 @@ const formSchema = z.object({
   tiempo: z.string().min(1, "La hora es obligatoria"),
 });
 
-export default function ReservationForm() {
-  const form = useForm<z.infer<typeof formSchema>>({
+type ReservationFormValues = z.infer<typeof formSchema>;
+
+type Reserva = {
+  courtId: string;
+  startTime: string;
+  clientName: string;
+};
+
+type ReservationFormProps = {
+  complexId: string;
+  courtId: string;
+  initialDate: string;
+  reservas: Reserva[];
+  onSuccess?: () => void;
+  onError?: (msg: string) => void;
+};
+
+export default function ReservationForm({
+  complexId,
+  courtId,
+  initialDate,
+  reservas,
+  onSuccess,
+  onError,
+}: ReservationFormProps) {
+  const minDate = useMemo(
+    () => new Date().toISOString().split("T")[0],
+    []
+  );
+
+  const form = useForm<ReservationFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       nombre: "",
       telefono: "",
-      fecha: "",
+      fecha: initialDate,
       tiempo: "",
     },
   });
 
-  const queryClient = useQueryClient();
+  // fecha que está seleccionada actualmente en el form
+  const fechaSel = form.watch("fecha") || initialDate;
 
-  const createReservation = async (
-    newRevervation: z.infer<typeof formSchema>
-  ) => {
-    const parseBody = formSchema.safeParse(newRevervation);
-
-    if (!parseBody.success) {
-      throw new Error(parseBody.error.message);
-    }
-
-    //post method to API
-    return fetch("/api/reservations", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(parseBody.data),
-    }).then((res) => {
-      if (!res.ok) {
-        throw new Error("Error creating reservation");
-      }
-      return res.json();
-    });
-  };
-
-  const { mutate, isPending } = useMutation({
-    mutationFn: createReservation,
-    onSuccess: async () => {
-      form.reset();
-      queryClient.invalidateQueries({ queryKey: ["reservations"] });
-      alert("Reserva creada con éxito");
-    },
-    onError: (e: Error) => {
-      alert(e.message);
-    },
-  });
-
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
-    mutate(data);
-  };
-
-  // genera slots (por ejemplo 08:00 a 23:00 cada 60 min)
+  // genera slots (08:00 a 23:00)
   const slots = useMemo(() => {
     const out: string[] = [];
     for (let h = 8; h <= 23; h++) {
@@ -86,12 +83,88 @@ export default function ReservationForm() {
     return out;
   }, []);
 
+  // horas ocupadas según reservas + fecha seleccionada
+  const horasOcupadasSet = useMemo(() => {
+    const sameDay = reservas.filter((r) => {
+      const d = new Date(r.startTime);
+      const isoDay = new Date(fechaSel + "T00:00:00").toDateString();
+      return r.courtId === courtId && d.toDateString() === isoDay;
+    });
+
+    const set = new Set<string>();
+    sameDay.forEach((r) => {
+      const d = new Date(r.startTime);
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      set.add(`${hh}:${mm}`);
+    });
+    return set;
+  }, [reservas, fechaSel, courtId]);
+
+  const createReservation = async (values: ReservationFormValues) => {
+    const parsed = formSchema.parse(values);
+
+    if (!complexId) {
+      throw new Error("Falta el Complex ID. Volvé a la lista y reintentá.");
+    }
+
+    const startTime = new Date(`${parsed.fecha}T${parsed.tiempo}:00`);
+    if (isNaN(startTime.getTime())) {
+      throw new Error("Completá una fecha y hora válidas.");
+    }
+    if (startTime < new Date()) {
+      throw new Error("No podés reservar en el pasado.");
+    }
+
+    const payload = {
+      complexId,
+      courtId,
+      startTime: startTime.toISOString(),
+      clientName: parsed.nombre.trim(),
+      clientPhone: parsed.telefono.trim(),
+    };
+
+    const resp = await fetch("/api/reservations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await resp.json().catch(() => ({} as any));
+
+    if (resp.status === 409) {
+      throw new Error(data?.error || "Ese horario ya está reservado.");
+    }
+    if (!resp.ok) {
+      throw new Error(data?.error || "Error al crear la reserva.");
+    }
+
+    return data;
+  };
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: createReservation,
+    onSuccess: () => {
+      form.reset({
+        nombre: "",
+        telefono: "",
+        fecha: initialDate,
+        tiempo: "",
+      });
+      onSuccess?.();
+    },
+    onError: (e: any) => {
+      onError?.(e?.message ?? "Error inesperado al crear la reserva.");
+    },
+  });
+
+  const onSubmit = (data: ReservationFormValues) => {
+    mutate(data);
+  };
+
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-3"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
         <FormField
           control={form.control}
           name="nombre"
@@ -101,13 +174,14 @@ export default function ReservationForm() {
                 <Input
                   placeholder="Nombre y apellido"
                   required
-                  className="focus:ring-brand-orange"
+                  className="bg-[#f5f7ff] text-brand-brown placeholder:text-brand-brown/40"
                   {...field}
                 />
               </FormControl>
+              <FormMessage className="text-xs text-red-500" />
             </FormItem>
           )}
-        ></FormField>
+        />
 
         <FormField
           control={form.control}
@@ -116,15 +190,17 @@ export default function ReservationForm() {
             <FormItem>
               <FormControl>
                 <Input
+                  type="tel"
                   placeholder="Teléfono"
                   required
-                  className="focus:ring-brand-orange"
+                  className="bg-[#f5f7ff] text-brand-brown placeholder:text-brand-brown/40"
                   {...field}
                 />
               </FormControl>
+              <FormMessage className="text-xs text-red-500" />
             </FormItem>
           )}
-        ></FormField>
+        />
 
         <div className="grid grid-cols-2 gap-3">
           <FormField
@@ -136,12 +212,15 @@ export default function ReservationForm() {
                   <Input
                     type="date"
                     required
+                    min={minDate}
+                    className="bg-[#f5f7ff] text-brand-brown"
                     {...field}
                   />
                 </FormControl>
+                <FormMessage className="text-xs text-red-500" />
               </FormItem>
             )}
-          ></FormField>
+          />
 
           <FormField
             control={form.control}
@@ -149,39 +228,46 @@ export default function ReservationForm() {
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <Select>
-                    <SelectTrigger className="w-full">
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full bg-[#f5f7ff] text-brand-brown">
                       <SelectValue placeholder="Elegí hora" />
                     </SelectTrigger>
                     <SelectContent>
-                      {slots.map((h, idx) => {
-                        // const disabled =
-                        //   horasOcupadas.has(h) ||
-                        //   new Date(`${fechaSel}T${h}:00`) < new Date();
+                      {slots.map((h) => {
+                        const disabled =
+                          horasOcupadasSet.has(h) ||
+                          new Date(`${fechaSel}T${h}:00`) < new Date();
+
                         return (
                           <SelectItem
-                            key={idx}
-                            {...field}
-                            // disabled={disabled}
+                            key={h}
+                            value={h}
+                            disabled={disabled}
+                            className="text-brand-brown"
                           >
                             {h}
-                            {/* {horasOcupadas.has(h) ? "— ocupado" : ""} */}
+                            {horasOcupadasSet.has(h)
+                              ? " — ocupado"
+                              : ""}
                           </SelectItem>
                         );
                       })}
                     </SelectContent>
                   </Select>
                 </FormControl>
+                <FormMessage className="text-xs text-red-500" />
               </FormItem>
             )}
-          ></FormField>
-
-          {/* Selector de hora con bloqueo */}
+          />
         </div>
+
         <Button
           type="submit"
-          className="w-full bg-(--brand-brown) hover:opacity-90 text-white"
-          disabled={isPending}
+          className="w-full bg-[var(--brand-brown)] hover:opacity-90 text-white"
+          disabled={isPending || !complexId}
         >
           {isPending ? "Reservando..." : "Confirmar reserva"}
         </Button>

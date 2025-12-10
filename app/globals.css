@@ -7,14 +7,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Paleta base */
+/* ===== PALETA GORESERVE ===== */
 :root {
-  --brand-green: #adc270;
-  --brand-yellow: #fecb68;
-  --brand-orange: #fda768;
-  --brand-brown: #473c33;
+  --brand-green: #6fcf97;
+  --brand-yellow: #f2c94c;
+  --brand-orange: #f2994a;
+  --brand-brown: #2f2a26;
 }
 
+/* ===== NECESARIO PARA UTILIDADES TIPO border-border, bg-background, etc. ===== */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -55,125 +56,210 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ===== TEMA DARK POR DEFECTO (SHADCN TOKENS) ===== */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --radius: 0.75rem;
+
+  --background: oklch(0.16 0.02 160);
+  --foreground: oklch(0.96 0 0);
+
+  --card: oklch(0.2 0.015 160);
+  --card-foreground: oklch(0.96 0 0);
+
+  --popover: oklch(0.2 0.015 160);
+  --popover-foreground: oklch(0.96 0 0);
+
+  --primary: oklch(0.7 0.15 150); /* se alinea con --brand-green */
+  --primary-foreground: oklch(0.12 0.02 60);
+
+  --secondary: oklch(0.22 0.01 160);
+  --secondary-foreground: oklch(0.96 0 0);
+
+  --muted: oklch(0.24 0.01 160);
+  --muted-foreground: oklch(0.7 0 0);
+
+  --accent: oklch(0.26 0.02 150);
+  --accent-foreground: oklch(0.96 0 0);
+
+  --destructive: oklch(0.68 0.18 25);
+
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.62 0.05 160);
+
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar: oklch(0.17 0.02 160);
+  --sidebar-foreground: oklch(0.96 0 0);
+  --sidebar-primary: oklch(0.7 0.15 150);
+  --sidebar-primary-foreground: oklch(0.12 0.02 60);
+  --sidebar-accent: oklch(0.25 0.02 150);
+  --sidebar-accent-foreground: oklch(0.96 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: oklch(0.62 0.05 160);
 }
 
-/* Fondo claro y neutral */
+/* ===== ESTILO GLOBAL ===== */
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
-    /* Césped oscuro + viñetas + franjas tipo corte */
-    background-color: #0f3a2a;
+
+    /* Fondo dark deportivo pero profesional */
+    background-color: #050f0b;
     background-image: radial-gradient(
-        1000px 400px at 50% 110%,
-        rgba(0, 0, 0, 0.6),
-        transparent 60%
+        circle at 15% 20%,
+        rgba(111, 207, 151, 0.18),
+        transparent 45%
       ),
       radial-gradient(
-        1200px 600px at -10% -10%,
-        rgba(0, 0, 0, 0.35),
-        transparent 60%
+        circle at 85% 30%,
+        rgba(242, 201, 76, 0.14),
+        transparent 50%
       ),
       radial-gradient(
-        1200px 600px at 110% -10%,
-        rgba(0, 0, 0, 0.35),
-        transparent 60%
+        circle at 50% 85%,
+        rgba(242, 153, 74, 0.14),
+        transparent 50%
       ),
-      repeating-linear-gradient(
-        0deg,
-        rgba(255, 255, 255, 0.05) 0 48px,
-        rgba(255, 255, 255, 0.02) 48px 96px
-      );
-    background-attachment: fixed, fixed, fixed, fixed;
+      linear-gradient(to bottom, #050f0b, #020806);
+    background-attachment: fixed;
   }
-  /* Líneas sutiles: mitad de cancha + círculo central */
+
+  /* Líneas de cancha muy sutiles */
   body::after {
     content: "";
     position: fixed;
     inset: 0;
-    background:
-      /* mitad de cancha (horizontal) */ linear-gradient(
-          to right,
-          rgba(255, 255, 255, 0.18),
-          rgba(255, 255, 255, 0.18)
-        )
-        0 50% / 100% 2px no-repeat,
-      /* círculo central */
-        radial-gradient(
-          130px 130px at 50% 50%,
-          rgba(255, 255, 255, 0.22) 1px,
-          transparent 2px
-        );
-    opacity: 0.18;
     pointer-events: none;
+    background: linear-gradient(
+          to right,
+          rgba(255, 255, 255, 0.08),
+          rgba(255, 255, 255, 0.08)
+        )
+        0 50% / 100% 1px no-repeat,
+      radial-gradient(
+        140px 140px at 50% 50%,
+        rgba(255, 255, 255, 0.1) 1px,
+        transparent 2px
+      );
+    opacity: 0.08;
+  }
+}
+
+/* ===== TOQUES EXTRA ESTÉTICOS (opcionales pero lindos) ===== */
+
+/* Cards con efecto vidrio / premium */
+.card,
+[class*="Card"] {
+  background: linear-gradient(
+    to bottom right,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.01)
+  );
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Inputs oscuros tipo app seria */
+input,
+select,
+textarea {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #f8fafc;
+}
+
+input::placeholder {
+  color: rgba(248, 250, 252, 0.5);
+}
+
+/* Botones con profundidad */
+button {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+@layer components {
+  /* Cualquier contenedor claro usa texto oscuro por defecto */
+  .bg-white,
+  .bg-white\/90,
+  .bg-zinc-50,
+  .bg-muted,
+  .bg-secondary {
+    color: #111827; /* gris casi negro, bien legible */
+  }
+
+  .bg-white p,
+  .bg-white\/90 p,
+  .bg-zinc-50 p,
+  .bg-muted p,
+  .bg-secondary p {
+    color: #374151; /* gris medio para párrafos */
+  }
+
+  .bg-white h1,
+  .bg-white h2,
+  .bg-white h3,
+  .bg-white\/90 h1,
+  .bg-white\/90 h2,
+  .bg-white\/90 h3,
+  .bg-zinc-50 h1,
+  .bg-zinc-50 h2,
+  .bg-zinc-50 h3,
+  .bg-muted h1,
+  .bg-muted h2,
+  .bg-muted h3,
+  .bg-secondary h1,
+  .bg-secondary h2,
+  .bg-secondary h3 {
+    color: #111827; /* títulos bien marcados */
+  }
+
+  /* Forzar inputs dentro de contenedores claros a usar texto oscuro y placeholders legibles */
+  .bg-white input,
+  .bg-white select,
+  .bg-white textarea,
+  .bg-white\/90 input,
+  .bg-white\/90 select,
+  .bg-white\/90 textarea,
+  .bg-zinc-50 input,
+  .bg-zinc-50 select,
+  .bg-zinc-50 textarea,
+  .bg-muted input,
+  .bg-muted select,
+  .bg-muted textarea,
+  .bg-secondary input,
+  .bg-secondary select,
+  .bg-secondary textarea {
+    color: inherit !important; /* hereda el color oscuro del contenedor claro */
+    background-color: rgba(255, 255, 255, 0.92);
+    border-color: rgba(17, 24, 39, 0.06) !important;
+  }
+
+  .bg-white input::placeholder,
+  .bg-white select::placeholder,
+  .bg-white textarea::placeholder,
+  .bg-white\/90 input::placeholder,
+  .bg-white\/90 select::placeholder,
+  .bg-white\/90 textarea::placeholder,
+  .bg-zinc-50 input::placeholder,
+  .bg-zinc-50 select::placeholder,
+  .bg-zinc-50 textarea::placeholder,
+  .bg-muted input::placeholder,
+  .bg-muted select::placeholder,
+  .bg-muted textarea::placeholder,
+  .bg-secondary input::placeholder,
+  .bg-secondary select::placeholder,
+  .bg-secondary textarea::placeholder {
+    color: #6b7280 !important; /* gray-500 para placeholder legible */
   }
 }

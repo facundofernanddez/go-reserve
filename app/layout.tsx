@@ -24,14 +24,12 @@ export const metadata: Metadata = {
  */
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} bg-white text-black h-full`}
-      >
+    <html lang="es" className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body>
         <AppProviders>
           <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <NavBar />
