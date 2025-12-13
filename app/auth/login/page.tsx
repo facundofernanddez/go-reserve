@@ -1,7 +1,8 @@
-
 "use client";
 
 import { useState } from "react";
+import { authClient } from "@/lib/auth-client"; 
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -9,13 +10,29 @@ import { Button } from "@/components/ui/button";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false); 
+  
+  const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setIsLoading(true); // 2. Bloqueamos el botón al empezar
 
-    console.log({ email, password });
-
-    alert("Formulario enviado (modo prueba)");
+    await authClient.signIn.email({
+      email,
+      password,
+    }, {
+      onSuccess: () => {
+        router.push("/dashboard");
+        router.refresh(); // Tip extra: actualiza la data de la sesión
+      },
+      onError: (ctx) => {
+        alert(ctx.error.message);
+        setIsLoading(false); // 3. Desbloqueamos si hubo error
+      }
+    });
+    // Nota: No desbloqueamos en onSuccess porque vamos a redirigir 
+    // y no queremos que el usuario toque nada mientras cambia de página.
   }
 
   return (
